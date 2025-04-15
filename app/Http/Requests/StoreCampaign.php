@@ -26,7 +26,7 @@ class StoreCampaign extends FormRequest
             'name' => 'required',
             'template' => 'required',
             'contacts' => 'required',
-            'event' => 'nullable|exists:events,event_id',
+            'event_id' => 'nullable|exists:events,event_id',
         ];
 
         if ($this->isMethod('post')) {
@@ -107,7 +107,6 @@ class StoreCampaign extends FormRequest
             'name.required' => 'The name field is required.',
             'template.required' => 'The template field is required.',
             'contacts.required' => 'The contacts field is required.',
-            'event.exists' => 'The selected event does not exist.',
             'header.parameters.0.value.required' => 'This field is required.',
             'header.parameters.0.value.max' => 'The value must not exceed :max characters.',
             'header.parameters.0.value.image' => 'The value must be an image (PNG or JPG) and should not exceed 5MB.',

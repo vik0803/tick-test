@@ -594,117 +594,162 @@ class WhatsappService
             "category" => $request->category,
         ];
 
-        if($request->header['format'] === 'TEXT'){
-            if(isset($request->header['text'])){
-                $headerComponent = [];
-
-                $headerComponent['type'] = "HEADER";
-                $headerComponent['format'] = $request->header['format'];
-                $headerComponent['text'] = $request->header['text'];
-
-                if (!empty($request->header['example'])) {
-                    $headerComponent['example']['header_text'] = $request->header['example'];
-                }
-
-                $requestData['components'][] = $headerComponent;
-            }
+        if($request->customize_ttl && $request->message_send_ttl_seconds){
+            $requestData['message_send_ttl_seconds'] = $request->message_send_ttl_seconds;
         }
 
-        if(($request->header['format'] === 'IMAGE' || $request->header['format'] === 'VIDEO' || $request->header['format'] === 'DOCUMENT')){
-            if(isset($request->header['example'])){
-                $fileUploadResponse = $this->initiateResumableUploadSession($request->header['example']);
+        if($request->category != 'AUTHENTICATION'){
+            if($request->header['format'] === 'TEXT'){
+                if(isset($request->header['text'])){
+                    $headerComponent = [];
 
-                if(!$fileUploadResponse->success){
-                    return $fileUploadResponse;
+                    $headerComponent['type'] = "HEADER";
+                    $headerComponent['format'] = $request->header['format'];
+                    $headerComponent['text'] = $request->header['text'];
+
+                    if (!empty($request->header['example'])) {
+                        $headerComponent['example']['header_text'] = $request->header['example'];
+                    }
+
+                    $requestData['components'][] = $headerComponent;
                 }
+            }
+        
 
-                $requestData['components'][] = [
-                    "type" => "HEADER",
-                    "format" => $request->header['format'],
-                    "example" => [
-                        "header_handle" => [
-                            $fileUploadResponse->data->h
+            if(($request->header['format'] === 'IMAGE' || $request->header['format'] === 'VIDEO' || $request->header['format'] === 'DOCUMENT')){
+                if(isset($request->header['example'])){
+                    $fileUploadResponse = $this->initiateResumableUploadSession($request->header['example']);
+
+                    if(!$fileUploadResponse->success){
+                        return $fileUploadResponse;
+                    }
+
+                    $requestData['components'][] = [
+                        "type" => "HEADER",
+                        "format" => $request->header['format'],
+                        "example" => [
+                            "header_handle" => [
+                                $fileUploadResponse->data->h
+                            ]
                         ]
-                    ]
-                ];
-            }
-        }
-        
-
-        if($request->body['text'] != null){
-            $bodyComponent = [];
-
-            $bodyComponent['type'] = "BODY";
-            $bodyComponent['text'] = $request->body['text'];
-
-            if (!empty($request->body['example'])) {
-                $bodyComponent['example']['body_text'][] = $request->body['example'];
-            }
-
-            $requestData['components'][] = $bodyComponent;
-        }
-
-        if ($request->has('footer')) {
-            if($request->footer['text'] != null){
-                $requestData['components'][] = [
-                    "type" => "FOOTER",
-                    "text" => $request->footer['text']
-                ];
-            }
-        }
-
-        if ($request->has('buttons')) {
-            if (!isset($requestData['components'])) {
-                $requestData['components'] = [];
-            }
-        
-            $requestData['components'][] = [
-                'type' => 'BUTTONS',
-                'buttons' => []
-            ];
-
-            $quickReplyButtons = [];
-
-            foreach ($request->buttons as $button) {
-                if ($button['type'] === 'QUICK_REPLY') {
-                    $quickReplyButtons[] = [
-                        'type' => $button['type'],
-                        'text' => $button['text'],
                     ];
                 }
             }
+        }
         
-            foreach ($request->buttons as $button) {
-                if ($button['type'] !== 'QUICK_REPLY') {
-                    if ($button['type'] === 'URL') {
-                        $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
+        if($request->category == 'AUTHENTICATION'){
+            $bodyComponent = [];
+            $bodyComponent['type'] = "BODY";
+            $bodyComponent['add_security_recommendation'] = $request->body['add_security_recommendation'];
+
+            $requestData['components'][] = $bodyComponent;
+        } else {
+            $bodyComponent = [];
+
+            if($request->body['text'] != null){
+                $bodyComponent['type'] = "BODY";
+                $bodyComponent['text'] = $request->body['text'];
+
+                if (!empty($request->body['example'])) {
+                    $bodyComponent['example']['body_text'][] = $request->body['example'];
+                }
+
+                $requestData['components'][] = $bodyComponent;
+            }
+        }
+
+        if ($request->has('footer')) {
+            if($request->category != 'AUTHENTICATION'){
+                if(isset($request->footer['text']) &&  $request->footer['text'] != null){
+                    $requestData['components'][] = [
+                        "type" => "FOOTER",
+                        "text" => $request->footer['text']
+                    ];
+                }
+            } else {
+                $requestData['components'][] = [
+                    "type" => "FOOTER",
+                    "code_expiration_minutes" => $request->footer['code_expiration_minutes']
+                ];
+            }
+        }
+
+        if($request->category != 'AUTHENTICATION'){
+            if ($request->has('buttons')) {
+                if (!isset($requestData['components'])) {
+                    $requestData['components'] = [];
+                }
+            
+                $requestData['components'][] = [
+                    'type' => 'BUTTONS',
+                    'buttons' => []
+                ];
+
+                $quickReplyButtons = [];
+
+                foreach ($request->buttons as $button) {
+                    if ($button['type'] === 'QUICK_REPLY') {
+                        $quickReplyButtons[] = [
                             'type' => $button['type'],
                             'text' => $button['text'],
-                            'url' => $button['url'],
-                        ];
-                    } elseif ($button['type'] === 'PHONE_NUMBER') {
-                        $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
-                            'type' => $button['type'],
-                            'text' => $button['text'],
-                            'phone_number' => $button['country'].$button['phone_number'],
-                        ];
-                    } elseif ($button['type'] === 'COPY_CODE') {
-                        $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
-                            'type' => $button['type'],
-                            'example' => $button['example'],
                         ];
                     }
                 }
+            
+                foreach ($request->buttons as $button) {
+                    if ($button['type'] !== 'QUICK_REPLY') {
+                        if ($button['type'] === 'URL') {
+                            $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
+                                'type' => $button['type'],
+                                'text' => $button['text'],
+                                'url' => $button['url'],
+                            ];
+                        } elseif ($button['type'] === 'PHONE_NUMBER') {
+                            $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
+                                'type' => $button['type'],
+                                'text' => $button['text'],
+                                'phone_number' => $button['country'].$button['phone_number'],
+                            ];
+                        } elseif ($button['type'] === 'COPY_CODE') {
+                            $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
+                                'type' => $button['type'],
+                                'example' => $button['example'],
+                            ];
+                        }
+                    }
+                }
+
+                // Add the quick reply buttons at the start
+                if (!empty($quickReplyButtons)) {
+                    $requestData['components'][count($requestData['components']) - 1]['buttons'] = array_merge($quickReplyButtons, $requestData['components'][count($requestData['components']) - 1]['buttons']);
+                }
+            }
+        } else {
+            $button = [
+                'type' => $request->authentication_button['type'],
+                'otp_type' => $request->authentication_button['otp_type'],
+                'text' => $request->authentication_button['text'],
+            ];
+
+            if($request->authentication_button['otp_type'] != 'copy_code'){
+                $button['autofill_text'] = $request->authentication_button['autofill_text'];
+                $button['supported_apps'] = $request->authentication_button['supported_apps'];
             }
 
-            // Add the quick reply buttons at the start
-            if (!empty($quickReplyButtons)) {
-                $requestData['components'][count($requestData['components']) - 1]['buttons'] = array_merge($quickReplyButtons, $requestData['components'][count($requestData['components']) - 1]['buttons']);
+            if ($request->authentication_button['otp_type'] === 'zero_tap') {
+                $button['zero_tap_terms_accepted'] = $request->authentication_button['zero_tap_terms_accepted'];
             }
+
+            $requestData['components'][] = [
+                'type' => 'BUTTONS',
+                'buttons' => [$button],
+            ];
         }
 
         $client = new Client();
         $responseObject = new \stdClass();
+
+        \Log::info($requestData);
 
         try {
             $response = $client->post($url, [
@@ -731,6 +776,237 @@ class WhatsappService
             $template->created_at = now();
             $template->updated_at = now();
             $template->save();
+        } catch (ConnectException $e) {
+            $responseObject->success = false;
+            $responseObject->data = new \stdClass();
+            $responseObject->data->error = new \stdClass();
+            $responseObject->message = $e->getMessage();
+        } catch (GuzzleException $e) {
+            $response = $e->getResponse();
+            $responseObject->success = false;
+            $responseObject->data = json_decode($response->getBody()->getContents());
+
+            if (isset($responseObject->data->error->error_user_msg)) {
+                $responseObject->message = $responseObject->data->error->error_user_msg;
+            } else {
+                $responseObject->message = $responseObject->data->error->message;
+            }
+        } catch (Exception $e) {
+            $responseObject->success = false;
+            $responseObject->data = new \stdClass();
+            $responseObject->data->error = new \stdClass();
+            $responseObject->data->error->message = $e->getMessage();
+        }
+
+        return $responseObject;
+    }
+
+    public function updateTemplate(Request $request, $uuid)
+    {
+        $template = Template::where('uuid', $uuid)->first();
+        $url = "https://graph.facebook.com/{$this->apiVersion}/{$template->meta_id}";
+        
+        $requestData = [
+            //"name" => $request->name,
+            //"language" => $request->language,
+            "category" => $template->status == 'APPROVED' ? $template->category : $request->category,
+        ];
+
+        if($request->customize_ttl && $request->message_send_ttl_seconds){
+            $requestData['message_send_ttl_seconds'] = $request->message_send_ttl_seconds;
+        }
+
+        if($request->category != 'AUTHENTICATION'){
+            if($request->header['format'] === 'TEXT'){
+                if(isset($request->header['text'])){
+                    $headerComponent = [];
+
+                    $headerComponent['type'] = "HEADER";
+                    $headerComponent['format'] = $request->header['format'];
+                    $headerComponent['text'] = $request->header['text'];
+
+                    if (!empty($request->header['example'])) {
+                        $headerComponent['example']['header_text'] = $request->header['example'];
+                    }
+
+                    $requestData['components'][] = $headerComponent;
+                }
+            }
+
+            if(($request->header['format'] === 'IMAGE' || $request->header['format'] === 'VIDEO' || $request->header['format'] === 'DOCUMENT')){
+                if(isset($request->header['example'])){
+                    $fileUploadResponse = $this->initiateResumableUploadSession($request->header['example']);
+
+                    if(!$fileUploadResponse->success){
+                        return $fileUploadResponse;
+                    }
+
+                    $requestData['components'][] = [
+                        "type" => "HEADER",
+                        "format" => $request->header['format'],
+                        "example" => [
+                            "header_handle" => [
+                                $fileUploadResponse->data->h
+                            ]
+                        ]
+                    ];
+                } else {
+                    // Decode existing metadata
+                    $metadata = json_decode($template->metadata, true);
+
+                    // Extract existing header if available
+                    $existingHeader = [];
+                    if (isset($metadata['components'])) {
+                        foreach ($metadata['components'] as $component) {
+                            if ($component['type'] === 'HEADER') {
+                                $existingHeader = $component;
+                                break;
+                            }
+                        }
+                    }
+
+                    $requestData['components'][] = $existingHeader;
+                }
+            }
+        }
+
+        if($request->category == 'AUTHENTICATION'){
+            $bodyComponent = [];
+            $bodyComponent['type'] = "BODY";
+            $bodyComponent['add_security_recommendation'] = $request->body['add_security_recommendation'];
+
+            $requestData['components'][] = $bodyComponent;
+        } else {
+            if($request->body['text'] != null){
+                $bodyComponent = [];
+
+                $bodyComponent['type'] = "BODY";
+                $bodyComponent['text'] = $request->body['text'];
+
+                if (!empty($request->body['example'])) {
+                    $bodyComponent['example']['body_text'][] = $request->body['example'];
+                }
+
+                $requestData['components'][] = $bodyComponent;
+            }
+        }
+
+        if ($request->has('footer')) {
+            if($request->category != 'AUTHENTICATION'){
+                if($request->footer['text'] != null){
+                    $requestData['components'][] = [
+                        "type" => "FOOTER",
+                        "text" => $request->footer['text']
+                    ];
+                }
+            } else {
+                $requestData['components'][] = [
+                    "type" => "FOOTER",
+                    "code_expiration_minutes" => $request->footer['code_expiration_minutes']
+                ];
+            }
+        }
+
+        if($request->category != 'AUTHENTICATION'){
+            if ($request->has('buttons')) {
+                if (!isset($requestData['components'])) {
+                    $requestData['components'] = [];
+                }
+            
+                $requestData['components'][] = [
+                    'type' => 'BUTTONS',
+                    'buttons' => []
+                ];
+
+                $quickReplyButtons = [];
+
+                foreach ($request->buttons as $button) {
+                    if ($button['type'] === 'QUICK_REPLY') {
+                        $quickReplyButtons[] = [
+                            'type' => $button['type'],
+                            'text' => $button['text'],
+                        ];
+                    }
+                }
+            
+                foreach ($request->buttons as $button) {
+                    if ($button['type'] !== 'QUICK_REPLY') {
+                        if ($button['type'] === 'URL') {
+                            $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
+                                'type' => $button['type'],
+                                'text' => $button['text'],
+                                'url' => $button['url'],
+                            ];
+                        } elseif ($button['type'] === 'PHONE_NUMBER') {
+                            $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
+                                'type' => $button['type'],
+                                'text' => $button['text'],
+                                'phone_number' => $button['country'].$button['phone_number'],
+                            ];
+                        } elseif ($button['type'] === 'COPY_CODE') {
+                            $requestData['components'][count($requestData['components']) - 1]['buttons'][] = [
+                                'type' => $button['type'],
+                                'example' => $button['example'],
+                            ];
+                        }
+                    }
+                }
+
+                // Add the quick reply buttons at the start
+                if (!empty($quickReplyButtons)) {
+                    $requestData['components'][count($requestData['components']) - 1]['buttons'] = array_merge($quickReplyButtons, $requestData['components'][count($requestData['components']) - 1]['buttons']);
+                }
+            }
+        } else {
+            $button = [
+                'type' => $request->authentication_button['type'],
+                'otp_type' => $request->authentication_button['otp_type'],
+                'text' => $request->authentication_button['text'],
+            ];
+
+            if($request->authentication_button['otp_type'] != 'copy_code'){
+                $button['autofill_text'] = $request->authentication_button['autofill_text'];
+                $button['supported_apps'] = $request->authentication_button['supported_apps'];
+            }
+
+            if ($request->authentication_button['otp_type'] === 'zero_tap') {
+                $button['zero_tap_terms_accepted'] = $request->authentication_button['zero_tap_terms_accepted'];
+            }
+
+            $requestData['components'][] = [
+                'type' => 'BUTTONS',
+                'buttons' => [$button],
+            ];
+        }
+
+        $client = new Client();
+        $responseObject = new \stdClass();
+
+        try {
+            $response = $client->post($url, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->accessToken,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $requestData,
+            ]);
+
+            $responseObject->success = true;
+            $responseObject->data = json_decode($response->getBody()->getContents());
+
+            //Update Template In Database
+            if ($template) {
+                $template->organization_id = session()->get('current_organization');
+                $template->category = $template->status == 'APPROVED' ? $template->category : $request->category;
+                //$template->metadata = json_encode($requestData);
+                $template->status = 'PENDING';
+                $template->created_by = auth()->user()->id;
+                $template->updated_at = now(); // No need to set `created_at` when updating
+                $template->save();
+            } else {
+                // Handle case where template is not found (optional)
+                throw new \Exception('Template not found');
+            }
         } catch (ConnectException $e) {
             $responseObject->success = false;
             $responseObject->data = new \stdClass();

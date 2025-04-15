@@ -3,10 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Event extends Model
 {
+    use HasFactory;
+
+    protected $guarded = [];
     protected $primaryKey = 'event_id';
+    public $timestamps = true;
 
     protected $fillable = [
         'event_name',
@@ -18,15 +23,28 @@ class Event extends Model
 
     protected $casts = [
         'event_date' => 'date',
-        'event_time' => 'datetime:H:i:s',
+        'event_time' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
-    public function generateTicketUrl($firstName, $lastName)
+    public function invitations()
     {
-        $encodedName = base64_encode($firstName . ' ' . $lastName);
-        return route('event.ticket', [
-            'event' => $this->event_id,
-            'name' => $encodedName
-        ]);
+        return $this->hasMany(Invitation::class, 'event_id');
     }
-} 
+
+    public function getAll($searchTerm)
+    {
+        return $this->where(function ($query) use ($searchTerm) {
+                $query->where('event_name', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('location', 'like', '%' . $searchTerm . '%');
+            })
+            ->latest()
+            ->paginate(10);
+    }
+
+    public function getRow($eventId)
+    {
+        return $this->find($eventId);
+    }
+}

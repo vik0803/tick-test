@@ -1,12 +1,14 @@
 <?php
 
+use App\Jobs\CreateCampaignLogsJob;
+use App\Jobs\ProcessCampaignMessagesJob;
 use App\Models\Language;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\File;
 use App\Http\Controllers\EventController;
-
+use App\Http\Controllers\TicketController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -106,6 +108,7 @@ Route::middleware(['auth:user'])->group(function () {
 
     Route::group(['middleware' => ['check.email.verification']], function () {
         Route::get('/select-organization', [App\Http\Controllers\User\OrganizationController::class, 'index'])->name('user.organization.index');
+        Route::post('/select-organization', [App\Http\Controllers\User\OrganizationController::class, 'selectOrganization'])->name('user.organization.selectOrganization');
         Route::post('/organization', [App\Http\Controllers\User\OrganizationController::class, 'store'])->name('user.organization.store');
 
         Route::group(['middleware' => ['check.organization']], function () {
@@ -152,6 +155,19 @@ Route::middleware(['auth:user'])->group(function () {
                 Route::post('/campaigns', [App\Http\Controllers\User\CampaignController::class, 'store']);
                 Route::get('/campaigns/export/{uuid?}', [App\Http\Controllers\User\CampaignController::class, 'export']);
                 Route::delete('/campaigns/{uuid?}', [App\Http\Controllers\User\CampaignController::class, 'delete']);
+
+                // Event routes
+                Route::get('/events/create', [App\Http\Controllers\User\EventController::class, 'create'])->name('events.create');
+                Route::post('/events', [App\Http\Controllers\User\EventController::class, 'store'])->name('events.store');
+                Route::get('/events/{eventId}/api', [App\Http\Controllers\User\EventController::class, 'getEvent'])->name('events.api');
+                Route::get('/events/{eventId?}', [App\Http\Controllers\User\EventController::class, 'index'])->name('events');
+                Route::get('/events/{eventId}/edit', [App\Http\Controllers\User\EventController::class, 'edit'])->name('events.edit');
+                Route::put('/events/{eventId}', [App\Http\Controllers\User\EventController::class, 'update'])->name('events.update');
+                Route::delete('/events/{eventId}', [App\Http\Controllers\User\EventController::class, 'delete'])->name('events.delete');
+                Route::get('/events/{eventId}/show', [App\Http\Controllers\User\EventController::class, 'show'])->name('events.show');
+                
+                // Temporary debug route for event deletion with GET
+                Route::get('/debug/events/delete/{eventId}', [App\Http\Controllers\User\EventController::class, 'delete'])->name('debug.events.delete');
 
                 Route::match(['get', 'post'], '/templates/create', [App\Http\Controllers\User\TemplateController::class, 'create']);
                 Route::get('/templates/{uuid?}', [App\Http\Controllers\User\TemplateController::class, 'index']);
@@ -280,7 +296,3 @@ Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
     Route::get('/user-logs/emails', [App\Http\Controllers\Admin\EmailLogController::class, 'index']);
 });
 
-// Event Routes
-Route::resource('events', EventController::class);
-Route::post('events/{event}/import-contacts', [EventController::class, 'importContacts'])->name('events.import-contacts');
-Route::get('event/{event}/{name}/ticket', [EventController::class, 'showTicket'])->name('event.ticket');

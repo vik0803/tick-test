@@ -16,9 +16,11 @@ use App\Models\Event;
 use App\Services\CampaignService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\Setting;
 
 class CampaignController extends BaseController
 {
@@ -60,7 +62,37 @@ class CampaignController extends BaseController
                 ->where('deleted_at', null)
                 ->get();
 
-            $data['events'] = Event::orderBy('event_date', 'desc')->get();
+            try {
+                $data['events'] = Event::whereNull('deleted_at')
+                    ->orderBy('event_date', 'desc')
+                    ->get()
+                    ->map(function ($event) {
+                        return [
+                            'uuid' => $event->event_id,
+                            'name' => $event->event_name,
+                            'event_name' => $event->event_name,
+                            'event_date' => $event->event_date,
+                            'event_time' => $event->event_time,
+                            'location' => $event->location,
+                            'ticket_prefix' => $event->ticket_prefix
+                        ];
+                    })
+                    ->toArray();
+                
+                // Log events data before passing to the view
+                Log::info('Events data for campaign create index method:', [
+                    'count' => count($data['events']),
+                    'first_event' => count($data['events']) > 0 ? $data['events'][0] : null,
+                    'route' => 'campaigns/create'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error fetching events for campaign create index:', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'route' => 'campaigns/create'
+                ]);
+                $data['events'] = [];
+            }
 
             $data['title'] = __('Create campaign');
 
@@ -74,33 +106,29 @@ class CampaignController extends BaseController
                 $data['campaign']['total_delivered_count'] = $counts->total_delivered_count ?? 0;
                 $data['campaign']['total_failed_count'] = $counts->total_failed_count ?? 0;
                 $data['campaign']['total_read_count'] = $counts->total_read_count ?? 0;
-            }else{
-                $data['campaign']['total_message_count'] = 0;
-                $data['campaign']['total_sent_count'] = 0;
-                $data['campaign']['total_delivered_count'] = 0;
-                $data['campaign']['total_read_count'] = 0;
-                $data['campaign']['total_failed_count'] = 0;
+                
+                $data['filters'] = request()->all(['search']);
+
+                $searchTerm = $request->query('search');
+                $data['rows'] = CampaignLogResource::collection(
+                    CampaignLog::with('contact', 'chat.logs')
+                        ->where('campaign_id', $data['campaign']->id)
+                        ->where(function ($query) use ($searchTerm) {
+                            $query->whereHas('contact', function ($contactQuery) use ($searchTerm) {
+                                $contactQuery->where('first_name', 'like', '%' . $searchTerm . '%')
+                                             ->orWhere('last_name', 'like', '%' . $searchTerm . '%')
+                                             ->orWhere('phone', 'like', '%' . $searchTerm . '%');
+                            });
+                        })
+                        ->orderBy('id')
+                        ->paginate(10)
+                );
+                $data['title'] = __('View campaign');
+
+                return Inertia::render('User/Campaign/View', $data);
+            } else {
+                return redirect()->route('campaigns')->with('error', __('Campaign not found'));
             }
-
-            $data['filters'] = request()->all(['search']);
-
-            $searchTerm = $request->query('search');
-            $data['rows'] = CampaignLogResource::collection(
-                CampaignLog::with('contact', 'chat.logs')
-                    ->where('campaign_id', $data['campaign']->id)
-                    ->where(function ($query) use ($searchTerm) {
-                        $query->whereHas('contact', function ($contactQuery) use ($searchTerm) {
-                            $contactQuery->where('first_name', 'like', '%' . $searchTerm . '%')
-                                         ->orWhere('last_name', 'like', '%' . $searchTerm . '%')
-                                         ->orWhere('phone', 'like', '%' . $searchTerm . '%');
-                        });
-                    })
-                    ->orderBy('id')
-                    ->paginate(10)
-            );
-            $data['title'] = __('View campaign');
-
-            return Inertia::render('User/Campaign/View', $data);
         }
     }
 
@@ -128,5 +156,53 @@ class CampaignController extends BaseController
                 'message' => __('Row deleted successfully!')
             ]
         );
+    }
+
+    public function create()
+    {
+        try {
+            $organizationId = session()->get('current_organization');
+            $templates = Template::where('organization_id', $organizationId)
+                ->where('deleted_at', null)
+                ->where('status', 'APPROVED')
+                ->get();
+            $contactGroups = ContactGroup::where('organization_id', $organizationId)
+                ->where('deleted_at', null)
+                ->get();
+            $settings = Organization::where('id', $organizationId)->first();
+            $events = Event::whereNull('deleted_at')
+                ->orderBy('event_date', 'desc')
+                ->get()
+                ->map(function ($event) {
+                    return [
+                        'uuid' => $event->event_id,
+                        'name' => $event->event_name,
+                        'event_name' => $event->event_name,
+                        'event_date' => $event->event_date,
+                        'event_time' => $event->event_time,
+                        'location' => $event->location,
+                        'ticket_prefix' => $event->ticket_prefix
+                    ];
+                });
+            
+            // Log events data before passing to the view
+            Log::info('Events data for campaign create method:', [
+                'count' => count($events),
+                'first_event' => count($events) > 0 ? $events[0] : null,
+                'events_type' => gettype($events),
+                'is_array' => is_array($events),
+                'is_collection' => $events instanceof \Illuminate\Support\Collection
+            ]);
+
+            return Inertia::render('User/Campaign/Create', [
+                'templates' => $templates,
+                'contactGroups' => $contactGroups,
+                'settings' => $settings,
+                'events' => $events,
+                'title' => __('Create campaign')
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
 }

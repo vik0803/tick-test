@@ -9,6 +9,8 @@ use App\Models\CampaignLog;
 use App\Models\ChatMedia;
 use App\Models\Contact;
 use App\Models\ContactGroup;
+use App\Models\Event;
+use App\Models\Invitation;
 use App\Models\Organization;
 use App\Models\Setting;
 use App\Models\Template;
@@ -21,7 +23,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 use Validator;
-use App\Models\Event;
 
 class CampaignService
 {
@@ -35,104 +36,81 @@ class CampaignService
         $organizationMetadata = json_decode($organization->metadata ?? '{}', true);
         $timezone = $organizationMetadata['timezone'] ?? $timezone;
 
-        $template = Template::where('uuid', $request->template)->first();
         $contactGroup = ContactGroup::where('uuid', $request->contacts)->first();
-        $event = $request->event ? Event::find($request->event) : null;
+        $event = $request->event_id ? Event::where('event_id', $request->event_id)->first() : null;
 
-        try {
-            DB::transaction(function () use ($request, $organizationId, $template, $contactGroup, $event, $timezone) {
-                //Request metadata
-                $mediaId = null;
-                if(in_array($request->header['format'], ['IMAGE', 'DOCUMENT', 'VIDEO'])){
-                    $header = $request->header;
+        DB::transaction(function () use ($request, $organizationId, $timezone, $contactGroup, $event) {
+            $contacts = $request->contacts === 'all' 
+                ? Contact::all()
+                : $contactGroup->contacts;
+
+            // Generate tickets for contacts if this is an event campaign
+            if ($event) {
+                foreach ($contacts as $contact) {
+                    $ticketId = $event->ticket_prefix . str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
                     
-                    if ($request->header['parameters']) {
-                        $metadata['header']['format'] = $header['format'];
-                        $metadata['header']['parameters'] = [];
-                
-                        foreach ($request->header['parameters'] as $key => $parameter) {
-                            if ($parameter['selection'] === 'upload') {
-                                //$path = $parameter['value']->store('public');
-                                //$imageUrl = config('app.url') . '/media/' . $path;
-
-                                $storage = Setting::where('key', 'storage_system')->first()->value;
-                                $fileName = $parameter['value']->getClientOriginalName();
-                                $fileContent = $parameter['value'];
-
-                                if($storage === 'local'){
-                                    $file = Storage::disk('local')->put('public', $fileContent);
-                                    $mediaFilePath = $file;
-                    
-                                    $mediaUrl = rtrim(config('app.url'), '/') . '/media/' . ltrim($mediaFilePath, '/');
-                                } else if($storage === 'aws') {
-                                    $file = $parameter['value'];
-                                    $uploadedFile = $file->store('uploads/media/sent/' . $organizationId, 's3');
-                                    $mediaFilePath = Storage::disk('s3')->url($uploadedFile);
-                    
-                                    $mediaUrl = $mediaFilePath;
-                                }
-
-                                $contentType = $this->getContentTypeFromUrl($mediaUrl);
-                                $mediaSize = $this->getMediaSizeInBytesFromUrl($mediaUrl);
-
-                                //save media
-                                $chatMedia = new ChatMedia;
-                                $chatMedia->name = $fileName;
-                                $chatMedia->path = $mediaUrl;
-                                $chatMedia->type = $contentType;
-                                $chatMedia->size = $mediaSize;
-                                $chatMedia->created_at = now();
-                                $chatMedia->save();
-
-                                $mediaId = $chatMedia->id;
-                            } else {
-                                $mediaUrl = $parameter['value'];
-                            }
-                
-                            $metadata['header']['parameters'][] = [
-                                'type' => $parameter['type'],
-                                'selection' => $parameter['selection'],
-                                'value' => $mediaUrl,
-                            ];
-                        }
-                    }
-                } else {
-                    $metadata['header'] = $request->header;
+                    Invitation::create([
+                        'event_id' => $event->event_id,
+                        'user_name' => $contact->first_name,
+                        'phone_number' => $contact->phone,
+                        'ticket_id' => $ticketId
+                    ]);
                 }
+            }
 
-                $metadata['body'] = $request->body;
-                $metadata['footer'] = $request->footer;
-                $metadata['buttons'] = $request->buttons;
-                $metadata['media'] = $mediaId;
+            $metadata = [
+                'header' => $request->header,
+                'body' => $request->body,
+                'footer' => $request->footer,
+                'buttons' => $request->buttons,
+                'media' => null,
+                'event_id' => $event ? $event->event_id : null
+            ];
 
-                // Convert $request->time from organization's timezone to UTC
-                $scheduledAt = $request->skip_schedule ? Carbon::now('UTC') : Carbon::parse($request->time, $timezone)->setTimezone('UTC');
+            // Convert $request->time from organization's timezone to UTC
+            $scheduledAt = $request->skip_schedule ? Carbon::now('UTC') : Carbon::parse($request->time, $timezone)->setTimezone('UTC');
 
-                //Create campaign
-                $campaign = new Campaign;
-                $campaign['organization_id'] = $organizationId;
-                $campaign['name'] = $request->name;
-                $campaign['template_id'] = $template->id;
-                $campaign['contact_group_id'] = $request->contacts === 'all' ? 0 : $contactGroup->id;
-                $campaign['event_id'] = $event ? $event->event_id : null;
-                $campaign['metadata'] = json_encode($metadata);
-                $campaign['created_by'] = auth()->user()->id;
-                $campaign['status'] = 'scheduled';
-                $campaign['scheduled_at'] = $scheduledAt;
-                $campaign->save();
-            });
-        } catch (\Exception $e) {
-            // Handle the exception here if needed.
-            // The transaction has already been rolled back automatically.
-            Log::error('Failed to store campaign', [
-                'error_message' => $e->getMessage(),
-                'organization_id' => $organizationId,
-                'template' => $request->template,
-                'contacts' => $request->contacts,
-                'user_id' => auth()->user()->id,
-                'stack_trace' => $e->getTraceAsString(),
-            ]);
-        }
+            //Create campaign
+            $campaign = new Campaign;
+            $campaign['organization_id'] = $organizationId;
+            $campaign['name'] = $request->name;
+            
+            // Get template by UUID and use its numeric ID
+            $template = Template::where('uuid', $request->template)->first();
+            $campaign['template_id'] = $template ? $template->id : null;
+            
+            $campaign['contact_group_id'] = $request->contacts === 'all' ? 0 : $contactGroup->id;
+            $campaign['metadata'] = json_encode($metadata);
+            $campaign['created_by'] = auth()->user()->id;
+            $campaign['status'] = $request->skip_schedule ? 'ongoing' : 'scheduled';
+            $campaign['scheduled_at'] = $scheduledAt;
+            $campaign['event_id'] = $event ? $event->event_id : null;
+            $campaign->save();
+
+            // Create campaign logs for each contact
+            foreach ($contacts as $contact) {
+                $invitation = $event ? Invitation::where('event_id', $event->event_id)
+                    ->where('phone_number', $contact->phone)
+                    ->first() : null;
+
+               // $ticketUrl = $invitation ? route('ticket.show', ['username' => $invitation->user_name]) : null;
+
+                $campaignLog = new CampaignLog;
+                $campaignLog['campaign_id'] = $campaign->id;
+                $campaignLog['contact_id'] = $contact->id;
+                $campaignLog['status'] = 'pending';
+                $campaignLog['metadata'] = json_encode([
+                    //'ticket_url' => $ticketUrl,
+                    'ticket_id' => $invitation ? $invitation->ticket_id : null
+                ]);
+                $campaignLog->save();
+            }
+
+            // Dispatch job to send campaign
+            if ($request->skip_schedule) {
+                SendCampaignJob::dispatch($campaign->id);
+            }
+        });
     }
 
     private function getMediaInfo($path)
@@ -151,12 +129,11 @@ class CampaignService
         SendCampaignJob::dispatch();
     }
 
-    public function destroy($uuid)
-    {
-        Campaign::where('uuid', $uuid)->update([
-            'deleted_by' => auth()->user()->id,
-            'deleted_at' => now()
-        ]);
+    public function destroy($uuid){
+        $campaign = Campaign::where('uuid', $uuid)->first();
+        if($campaign){
+            $campaign->delete();
+        }
     }
 
     private function getContentTypeFromUrl($url) {

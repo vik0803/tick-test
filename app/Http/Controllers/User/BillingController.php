@@ -64,6 +64,21 @@ class BillingController extends BaseController
                     ]
                 );
             }
+        } else if($request->has('hostedpage')){
+            if (file_exists(base_path('modules/Pabbly/Services/PabblyService.php'))) {
+                $data['isPaymentLoading'] = true;
+
+                $pabblyService = new \Modules\Pabbly\Services\PabblyService();
+                $response = $pabblyService->subscribeToPlan($request->hostedpage);
+                $data = $response->getData();
+                
+                return redirect('/billing')->with(
+                    'status', [
+                        'type' => $response->status() === '200' ? 'success' : 'error', 
+                        'message' => $data->message
+                    ]
+                );
+            }
         }
 
         return Inertia::render('User/Billing/Index', $data);

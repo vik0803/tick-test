@@ -25,7 +25,7 @@ class CustomEmailVerification extends Mailable
     {
         $verificationUrl = $this->verificationUrl($this->user);
         $templateContent = $this->replacePlaceholders($this->template->body, [
-            'firstName' => $this->user->name,
+            'firstName' => $this->user->first_name,
             'verificationLink' => $verificationUrl,
         ]);
 

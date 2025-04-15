@@ -65,6 +65,11 @@ class SubscriptionPlanService
             //Create product in Stripe
             (new StripeService)->createProduct($newSubscriptionPlan);
         }
+
+        if (file_exists(base_path('modules/Pabbly/Services/PabblyService.php'))) {
+            $pabblyService = new \Modules\Pabbly\Services\PabblyService();
+            $response = $pabblyService->createPlan($newSubscriptionPlan);
+        }
     
         return $newSubscriptionPlan;
     }
@@ -99,6 +104,11 @@ class SubscriptionPlanService
         if($stripe->is_active == '1'){
             //Update product in Stripe
             (new StripeService)->updateProduct($plan);
+        }
+
+        if (file_exists(base_path('modules/Pabbly/Services/PabblyService.php'))) {
+            $pabblyService = new \Modules\Pabbly\Services\PabblyService();
+            $response = $pabblyService->updatePlan($plan);
         }
 
         return $plan;

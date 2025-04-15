@@ -59,6 +59,10 @@ return [
     'razorpay' => [
         'class' => Modules\Razorpay\Controllers\ProcessPayment::class,
     ],
+
+    'pabbly subscriptions' => [
+        'class' => Modules\Pabbly\Controllers\ProcessPayment::class,
+    ],
 ];
 
 

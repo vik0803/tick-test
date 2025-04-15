@@ -147,6 +147,8 @@ class ChatService
                     'result' => ContactResource::collection($contacts)->response()->getData(),
                 ], 200);
             } else {
+                $settings = json_decode($config->metadata);
+
                 //To ensure the unread message counter is updated
                 $unreadMessages = Chat::where('organization_id', $this->organizationId)
                     ->where('type', 'inbound')
@@ -157,6 +159,7 @@ class ChatService
                 return Inertia::render('User/Chat/Index', [
                     'title' => 'Chats',
                     'rows' => ContactResource::collection($contacts),
+                    'simpleForm' => CustomHelper::isModuleEnabled('AI Assistant') && optional(optional($settings)->ai)->ai_chat_form_active ? false : true,
                     'rowCount' => $rowCount,
                     'filters' => request()->all(),
                     'pusherSettings' => $pusherSettings,
@@ -185,9 +188,12 @@ class ChatService
                 'result' => ContactResource::collection($contacts)->response()->getData(),
             ], 200);
         } else {
+            $settings = json_decode($config->metadata);
+            
             return Inertia::render('User/Chat/Index', [
                 'title' => 'Chats',
                 'rows' => ContactResource::collection($contacts),
+                'simpleForm' => !CustomHelper::isModuleEnabled('AI Assistant') || empty($settings->ai->ai_chat_form_active),
                 'rowCount' => $rowCount,
                 'filters' => request()->all(),
                 'pusherSettings' => $pusherSettings,

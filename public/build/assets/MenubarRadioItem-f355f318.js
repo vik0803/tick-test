@@ -1,0 +1,6 @@
+import{D as u,o as m,e as d,f as a,h as o,u as e,J as f,M as p}from"./app-06066091.js";import{e as y,l as _}from"./index-4364f7ce.js";import{c as x}from"./utils-9d1e612c.js";import{c as b}from"./createLucideIcon-61c243d3.js";import{_ as g}from"./_plugin-vue_export-helper-c27b6911.js";/**
+ * @license lucide-vue-next v0.488.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const h=b("circle",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}]]),v=u({__name:"MenubarRadioItem",props:{value:{},disabled:{type:Boolean},textValue:{},asChild:{type:Boolean},as:{},class:{}},emits:["select"],setup(r,{emit:c}){const t=r,l=c;return(n,s)=>(m(),d(e(_),p(t,{class:[e(x)("relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",t.class)],onSelect:s[0]||(s[0]=i=>l("select",i))}),{default:a(()=>[o(e(y),{class:"absolute left-2 flex h-3.5 w-3.5 items-center justify-center"},{default:a(()=>[o(e(h),{class:"h-2 w-2 fill-curren"})]),_:1}),f(n.$slots,"default")]),_:3},16,["class"]))}}),w=g(v,[["__file","MenubarRadioItem.vue"]]);export{w as default};

@@ -48,13 +48,15 @@ return [
 
         'ses' => [
             'transport' => 'ses',
+            'key' => env('SES_KEY'),
+            'secret' => env('SES_KEY_SECRET'),
+            'region' => env('SES_REGION', 'us-east-1'),
         ],
 
         'mailgun' => [
             'transport' => 'mailgun',
-            // 'client' => [
-            //     'timeout' => 5,
-            // ],
+            'domain' => env('MAILGUN_DOMAIN'),
+            'secret' => env('MAILGUN_SECRET'),
         ],
 
         'postmark' => [

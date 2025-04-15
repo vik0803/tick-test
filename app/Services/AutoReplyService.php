@@ -336,6 +336,7 @@ class AutoReplyService
             'state' => $address['state'] ?? Null,
             'zip_code' => $address['zip'] ?? Null,
             'country' => $address['country'] ?? Null,
+            'ticket_url' => "http://baseTicketurl:{$contact->full_name}{$contact->phone}.com"
         ];
 
         $transformedMetadata = [];

@@ -138,9 +138,28 @@ class SettingService
                             Cache::flush();
 
                             EnvSet::setKey('MAIL_MAILER', $value['driver']);
+                            EnvSet::setKey('MAIL_HOST', null);
+                            EnvSet::setKey('MAIL_PORT', null);
+                            EnvSet::setKey('MAIL_USERNAME', null);
+                            EnvSet::setKey('MAIL_PASSWORD', null);
                             EnvSet::setKey('SES_KEY', $value['ses_key']);
                             EnvSet::setKey('SES_KEY_SECRET', $value['ses_secret']);
                             EnvSet::setKey('SES_REGION', $value['ses_region']);
+                            EnvSet::setKey('MAIL_FROM_ADDRESS', $value['from_address']);
+                            EnvSet::setKey('MAIL_FROM_NAME', $value['from_name']);
+                            EnvSet::save();
+                        } else if($value['driver'] == 'mailgun'){
+                            Artisan::call('config:clear');
+                            Artisan::call('cache:clear');
+                            Cache::flush();
+
+                            EnvSet::setKey('MAIL_MAILER', $value['driver']);
+                            EnvSet::setKey('MAIL_HOST', null);
+                            EnvSet::setKey('MAIL_PORT', null);
+                            EnvSet::setKey('MAIL_USERNAME', null);
+                            EnvSet::setKey('MAIL_PASSWORD', null);
+                            EnvSet::setKey('MAILGUN_DOMAIN', $value['mg_domain']);
+                            EnvSet::setKey('MAILGUN_SECRET', $value['mg_secret']);
                             EnvSet::setKey('MAIL_FROM_ADDRESS', $value['from_address']);
                             EnvSet::setKey('MAIL_FROM_NAME', $value['from_name']);
                             EnvSet::save();

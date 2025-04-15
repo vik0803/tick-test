@@ -21,11 +21,12 @@
         "openai-php/client": "^0.10.1",
         "phpoffice/phpword": "^1.2",
         "propaganistas/laravel-phone": "^5.0",
-        "pusher/pusher-php-server": "^7.2",
+        "pusher/pusher-php-server": "*",
         "resend/resend-laravel": "^0.11.0",
         "smalot/pdfparser": "^2.10",
         "spatie/image": "^2.2",
-        "stripe/stripe-php": "^13.12"
+        "stripe/stripe-php": "^13.12",
+        "tightenco/ziggy": "^2.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

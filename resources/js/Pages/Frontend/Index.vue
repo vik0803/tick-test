@@ -28,9 +28,9 @@
                 </div>
                 
                 <div class="flex justify-end items-center text-md">
-                    <Link href="/login" class="hidden md:inline-block mr-10 cursor-pointer hover:text-gray-400 border-black">{{ $t('Login') }}</Link>
-                    <Link href="/signup" class="hidden md:inline-block bg-primary hover:bg-secondary text-white p-2 rounded-lg text-sm w-fit px-8">{{ $t('Sign Up') }}</Link>
-                    <Link href="/login" class="md:hidden bg-primary hover:bg-secondary text-white p-2 rounded-lg text-sm flex w-fit px-8">{{ $t('Login') }}</Link>
+                    <Link href="/login" class="hidden md:inline-block mr-10 cursor-pointer hover:text-primary transition-colors duration-200">{{ $t('Login') }}</Link>
+                    <Link href="/signup" class="hidden md:inline-block bg-primary hover:bg-secondary text-white p-2 rounded-lg text-sm w-fit px-8 transition-colors duration-200">{{ $t('Sign Up') }}</Link>
+                    <Link href="/login" class="md:hidden bg-primary hover:bg-secondary text-white p-2 rounded-lg text-sm flex w-fit px-8 transition-colors duration-200">{{ $t('Login') }}</Link>
                 </div>
             </div>
             <div class="flex justify-center mt-[7%] h-full">

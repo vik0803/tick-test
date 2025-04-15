@@ -144,7 +144,7 @@ class SendCampaignJob implements ShouldQueue
 
     protected function processPendingCampaignLogs(Campaign $campaign)
     {
-        CampaignLog::with('campaign', 'contact')
+        CampaignLog::with(['campaign', 'contact'])
             ->where('campaign_id', $campaign->id)
             ->where('status', '=', 'pending')
             ->chunk(500, function ($pendingCampaignLogs) {
@@ -153,6 +153,22 @@ class SendCampaignJob implements ShouldQueue
                     if ($campaignLog->status === 'ongoing' || $campaignLog->status === 'success') {
                         continue;
                     }
+                    
+                    // Skip if campaign or contact is missing
+                    if (!$campaignLog->campaign || !$campaignLog->contact) {
+                        // Mark as failed
+                        $campaignLog->status = 'failed';
+                        $campaignLog->metadata = json_encode(['error' => !$campaignLog->campaign ? 'Campaign not found' : 'Contact not found']);
+                        $campaignLog->save();
+                        
+                        Log::error('Campaign log has missing relationships', [
+                            'campaign_log_id' => $campaignLog->id,
+                            'campaign_missing' => !$campaignLog->campaign,
+                            'contact_missing' => !$campaignLog->contact
+                        ]);
+                        continue;
+                    }
+                    
                     $this->sendTemplateMessage($campaignLog);
                 }
             });
@@ -174,7 +190,7 @@ class SendCampaignJob implements ShouldQueue
                               ->lockForUpdate()
                               ->first();
                    
-            if ($log) {     
+            if ($log && $campaignLog->contact) {
                 $campaign_user_id = Campaign::find($log->campaign_id)?->created_by;    
                 $log->status = 'ongoing';
                 $log->save();
@@ -187,6 +203,16 @@ class SendCampaignJob implements ShouldQueue
                 $responseObject = $this->whatsappService->sendTemplateMessage($campaignLog->contact->uuid, $template, $campaign_user_id, $campaignLog->campaign_id);
                 //Log::info(json_encode($responseObject));
                 $this->updateCampaignLogStatus($campaignLog, $responseObject);
+            } else if ($log && !$campaignLog->contact) {
+                // Update log status to failed if contact is missing
+                $log->status = 'failed';
+                $log->metadata = json_encode(['error' => 'Contact not found']);
+                $log->save();
+                
+                Log::error('Campaign log contact is null', [
+                    'campaign_log_id' => $campaignLog->id,
+                    'campaign_id' => $campaignLog->campaign_id
+                ]);
             }
         });
     }

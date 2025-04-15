@@ -179,57 +179,90 @@ class PayPalService
             return false;
         }
     }
-
+	
     public function handleWebhook(Request $request)
-    {
-        if (!$this->isValidWebhook($request)) {
-            //Log::error('Received invalid webhook');
-            return response('Invalid webhook', 400);
+	{
+		if (!$this->isValidWebhook($request)) {
+			Log::error('Received invalid webhook');
+			return response('Invalid webhook', 400);
+		}
 
-            exit();
-        }
 
-        if ($request->event_type == "PAYMENTS.PAYMENT.CREATED") {
-            $transaction = DB::transaction(function () use ($request) {
-                $transactionData = $request->resource['transactions'][0];
-                $metadata = $transactionData['custom'] ?? null;
+		if ($request->event_type == "PAYMENTS.PAYMENT.CREATED") {
+			try {
+				$paymentId = $request->resource['id'];
+				$payerId = $request->resource['payer']['payer_info']['payer_id'];
 
-                if($metadata){
-                    $metadata = explode('_', $metadata);
+				$executionResult = $this->executePaymentFromWebhook($paymentId, $payerId);
 
-                    $organizationId = $metadata[0] ?? null;
-                    $userId = $metadata[1] ?? null;
-                    $planId = ($metadata[2] !== '') ? $metadata[2] : null;
-                    $amount = $transactionData['amount']['total'];
+				if (!$executionResult->success) {
+					Log::error('Failed to execute payment: ' . json_encode($executionResult->error));
+					return response('Payment execution failed', 400);
+				}
 
-                    $payment = BillingPayment::create([
-                        'organization_id' => $organizationId,
-                        'processor' => 'paypal',
-                        'details' => $request->resource['id'],
-                        'amount' => $amount
-                    ]);
+				$transaction = DB::transaction(function () use ($request) {
+					$transactionData = $request->resource['transactions'][0];
+					$metadata = $transactionData['custom'] ?? null;
 
-                    $transaction = BillingTransaction::create([
-                        'organization_id' => $organizationId,
-                        'entity_type' => 'payment',
-                        'entity_id' => $payment->id,
-                        'description' => 'PayPal Payment',
-                        'amount' => $amount,
-                        'created_by' => $userId,
-                    ]);
+					if($metadata){
+						$metadata = explode('_', $metadata);
+						$organizationId = $metadata[0] ?? null;
+						$userId = $metadata[1] ?? null;
+						$planId = ($metadata[2] !== '') ? $metadata[2] : null;
+						$amount = $transactionData['amount']['total'];
 
-                    if($planId == null){
-                        $this->subscriptionService->activateSubscriptionIfInactiveAndExpiredWithCredits($organizationId, $userId);
-                    } else {
-                        $this->subscriptionService->updateSubscriptionPlan($organizationId, $planId, $userId);
-                    }
+						$payment = BillingPayment::create([
+							'organization_id' => $organizationId,
+							'processor' => 'paypal',
+							'details' => $request->resource['id'],
+							'amount' => $amount
+						]);
 
-                    //Log::debug($transaction);
-                    event(new NewPaymentEvent($transaction, $organizationId));
+						$transaction = BillingTransaction::create([
+							'organization_id' => $organizationId,
+							'entity_type' => 'payment',
+							'entity_id' => $payment->id,
+							'description' => 'PayPal Payment',
+							'amount' => $amount,
+							'created_by' => $userId,
+						]);
 
-                    return $transaction;
-                }
-            });
-        }
-    }
+						if($planId == null){
+							$this->subscriptionService->activateSubscriptionIfInactiveAndExpiredWithCredits($organizationId, $userId);
+						} else {
+							$this->subscriptionService->updateSubscriptionPlan($organizationId, $planId, $userId);
+						}
+
+						event(new NewPaymentEvent($transaction, $organizationId));
+						return $transaction;
+					}
+				});
+
+				return response('Webhook processed', 200);
+			} catch (\Exception $e) {
+				Log::error('Error processing PayPal webhook: ' . $e->getMessage());
+				return response('Error processing webhook', 500);
+			}
+		}
+
+		return response('Webhook received', 200);
+	}
+
+	private function executePaymentFromWebhook($paymentId, $payerId)
+	{
+		try {
+			$request = $this->makeRequest(
+				'POST',
+				"v1/payments/payment/{$paymentId}/execute",
+				[
+					'payer_id' => $payerId
+				]
+			);
+
+			return $request;
+		} catch (\Exception $e) {
+			Log::error('PayPal execute payment error: ' . $e->getMessage());
+			return (object) array('success' => false, 'error' => $e->getMessage());
+		}
+	}
 }

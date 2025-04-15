@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d477883a83e8588fe9f77f965c967303",
+    "content-hash": "76e86d599590d6adf5b1dd07bb42e817",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -5033,23 +5033,23 @@
         },
         {
             "name": "pusher/pusher-php-server",
-            "version": "7.2.4",
+            "version": "7.2.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pusher/pusher-http-php.git",
-                "reference": "de2f72296808f9cafa6a4462b15a768ff130cddb"
+                "reference": "148b0b5100d000ed57195acdf548a2b1b38ee3f7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pusher/pusher-http-php/zipball/de2f72296808f9cafa6a4462b15a768ff130cddb",
-                "reference": "de2f72296808f9cafa6a4462b15a768ff130cddb",
+                "url": "https://api.github.com/repos/pusher/pusher-http-php/zipball/148b0b5100d000ed57195acdf548a2b1b38ee3f7",
+                "reference": "148b0b5100d000ed57195acdf548a2b1b38ee3f7",
                 "shasum": ""
             },
             "require": {
                 "ext-curl": "*",
                 "ext-json": "*",
                 "guzzlehttp/guzzle": "^7.2",
-                "paragonie/sodium_compat": "^1.6",
+                "paragonie/sodium_compat": "^1.6|^2.0",
                 "php": "^7.3|^8.0",
                 "psr/log": "^1.0|^2.0|^3.0"
             },
@@ -5088,9 +5088,9 @@
             ],
             "support": {
                 "issues": "https://github.com/pusher/pusher-http-php/issues",
-                "source": "https://github.com/pusher/pusher-http-php/tree/7.2.4"
+                "source": "https://github.com/pusher/pusher-http-php/tree/7.2.7"
             },
-            "time": "2023-12-15T10:58:53+00:00"
+            "time": "2025-01-06T10:56:20+00:00"
         },
         {
             "name": "ralouphie/getallheaders",
@@ -7987,6 +7987,76 @@
             "time": "2023-08-24T14:51:05+00:00"
         },
         {
+            "name": "tightenco/ziggy",
+            "version": "v2.5.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tighten/ziggy.git",
+                "reference": "d59dbb61dc0a1d9abb2130451b9e5e0f264bfe1c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tighten/ziggy/zipball/d59dbb61dc0a1d9abb2130451b9e5e0f264bfe1c",
+                "reference": "d59dbb61dc0a1d9abb2130451b9e5e0f264bfe1c",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "laravel/framework": ">=9.0",
+                "php": ">=8.1"
+            },
+            "require-dev": {
+                "laravel/folio": "^1.1",
+                "orchestra/testbench": "^7.0 || ^8.0 || ^9.0 || ^10.0",
+                "pestphp/pest": "^2.26|^3.0",
+                "pestphp/pest-plugin-laravel": "^2.4|^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Tighten\\Ziggy\\ZiggyServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Tighten\\Ziggy\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Daniel Coulbourne",
+                    "email": "daniel@tighten.co"
+                },
+                {
+                    "name": "Jake Bathman",
+                    "email": "jake@tighten.co"
+                },
+                {
+                    "name": "Jacob Baker-Kretzmar",
+                    "email": "jacob@tighten.co"
+                }
+            ],
+            "description": "Use your Laravel named routes in JavaScript.",
+            "homepage": "https://github.com/tighten/ziggy",
+            "keywords": [
+                "Ziggy",
+                "javascript",
+                "laravel",
+                "routes"
+            ],
+            "support": {
+                "issues": "https://github.com/tighten/ziggy/issues",
+                "source": "https://github.com/tighten/ziggy/tree/v2.5.2"
+            },
+            "time": "2025-02-27T15:43:52+00:00"
+        },
+        {
             "name": "tijsverkoyen/css-to-inline-styles",
             "version": "2.2.6",
             "source": {
@@ -10695,12 +10765,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.1"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }

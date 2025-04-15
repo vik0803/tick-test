@@ -129,7 +129,7 @@ class OrganizationService
             Subscription::create([
                 'organization_id' => $organization->id,
                 'status' => $has_trial ? 'trial' : 'active',
-                'plan_id' => $plan->id,
+                'plan_id' => $plan ? $plan->id : NULL,
                 'start_date' => now(),
                 'valid_until' => $has_trial ? date('Y-m-d H:i:s', strtotime('+' . $config->value . ' days')) : now(),
             ]);

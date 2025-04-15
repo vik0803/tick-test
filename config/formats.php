@@ -228,6 +228,7 @@ $placeholders = [
     ['value' => '{state}', 'label' => 'State'],
     ['value' => '{zip_code}', 'label' => 'Zip code'],
     ['value' => '{country}', 'label' => 'Country'],
+    ['value' => '{ticket_url}', 'label' => 'Ticket URL'],
 ];
 
 return [

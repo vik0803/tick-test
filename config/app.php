@@ -19,6 +19,7 @@ $providers = [
     App\Providers\RouteServiceProvider::class,
     App\Providers\RecaptchaServiceProvider::class,
     Mews\Purifier\PurifierServiceProvider::class,
+    // Tighten\Ziggy\ZiggyServiceProvider::class,
 ];
 
 // Conditionally add EmbeddedSignupServiceProvider if it exists
@@ -48,6 +49,10 @@ if (is_dir(base_path('modules/SocketIo')) && class_exists(\Modules\SocketIo\Prov
 
 if (is_dir(base_path('modules/Webhook')) && class_exists(\Modules\Webhook\Providers\WebhookServiceProvider::class)) {
     $providers[] = \Modules\Webhook\Providers\WebhookServiceProvider::class;
+}
+
+if (is_dir(base_path('modules/Pabbly')) && class_exists(\Modules\Pabbly\Providers\PabblyServiceProvider::class)) {
+    $providers[] = \Modules\Pabbly\Providers\PabblyServiceProvider::class;
 }
 
 return [

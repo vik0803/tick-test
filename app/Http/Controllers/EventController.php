@@ -4,97 +4,51 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\EventContactsImport;
 
 class EventController extends Controller
 {
+    // GET /events
     public function index()
     {
-        $events = Event::orderBy('event_date', 'desc')->get();
-        return view('events.index', compact('events'));
+        return Event::all();
     }
 
-    public function create()
-    {
-        return view('events.create');
-    }
-
+    // POST /events
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'event_name' => 'required|string|max:255',
-            'event_date' => 'required|date',
-            'event_time' => 'required',
-            'location' => 'required|string|max:255',
-            'ticket_prefix' => 'required|string|max:4',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        Event::create($request->all());
-
-        return redirect()->route('events.index')
-            ->with('success', 'Event created successfully.');
-    }
-
-    public function edit(Event $event)
-    {
-        return view('events.edit', compact('event'));
-    }
-
-    public function update(Request $request, Event $event)
-    {
-        $validator = Validator::make($request->all(), [
-            'event_name' => 'required|string|max:255',
-            'event_date' => 'required|date',
-            'event_time' => 'required',
-            'location' => 'required|string|max:255',
-            'ticket_prefix' => 'required|string|max:4',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        $event->update($request->all());
-
-        return redirect()->route('events.index')
-            ->with('success', 'Event updated successfully.');
-    }
-
-    public function destroy(Event $event)
-    {
-        $event->delete();
-
-        return redirect()->route('events.index')
-            ->with('success', 'Event deleted successfully.');
-    }
-
-    public function importContacts(Request $request, Event $event)
-    {
         $request->validate([
-            'contacts_file' => 'required|mimes:xlsx,xls',
+            'event_name'     => 'required|string|max:191',
+            'event_date'     => 'required|date',
+            'event_time'     => 'required',
+            'location'       => 'required|string|max:191',
+            'ticket_prefix'  => 'required|string|max:4',
         ]);
 
-        Excel::import(new EventContactsImport($event), $request->file('contacts_file'));
+        $event = Event::create($request->all());
 
-        return redirect()->route('events.show', $event)
-            ->with('success', 'Contacts imported successfully.');
+        return response()->json($event, 201);
     }
 
-    public function showTicket($eventId, $encodedName)
+    public function show($uuid)
     {
-        $event = Event::findOrFail($eventId);
-        $decodedName = base64_decode($encodedName);
-        
-        return view('events.ticket', compact('event', 'decodedName'));
+        $event = Event::where('uuid', $uuid)->firstOrFail();
+        return response()->json($event);
     }
-} 
+    
+    public function update(Request $request, $uuid)
+    {
+        $event = Event::where('uuid', $uuid)->firstOrFail();
+        $event->update($request->all());
+    
+        return response()->json($event);
+    }
+    
+    public function destroy($uuid)
+    {
+        $event = Event::where('uuid', $uuid)->firstOrFail();
+        $event->delete();
+    
+        return response()->json(['message' => 'Event deleted successfully']);
+    }
+    
+}

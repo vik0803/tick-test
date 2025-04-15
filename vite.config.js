@@ -7,9 +7,14 @@ import path from 'path';
 
 export default defineConfig({
     plugins: [
-        vue(),
+        vue({
+            template: {
+                compilerOptions: {
+                    isCustomElement: (tag) => tag.includes('-')
+                }
+            }
+        }),
         VueI18nPlugin({
-            // Define the path to your locale files
             include: path.resolve(__dirname, 'lang/**')
         }),
         laravel({
@@ -18,4 +23,21 @@ export default defineConfig({
         }),
         i18n(),
     ],
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, './resources/js'),
+            ziggy: 'ziggy-js',
+            vue: 'vue/dist/vue.esm-bundler.js'
+        },
+    },
+    define: {
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
+        __VUE_OPTIONS_API__: 'true',
+        __VUE_PROD_DEVTOOLS__: 'false'
+    },
+    build: {
+        commonjsOptions: {
+            include: [/node_modules/]
+        }
+    }
 });

@@ -1,0 +1,6 @@
+import{D as n,o as c,e as l,f as r,J as i,h as t,u as e,M as d}from"./app-06066091.js";import{E as u,H as f}from"./index-4364f7ce.js";import{c as p}from"./utils-9d1e612c.js";import{c as m}from"./createLucideIcon-61c243d3.js";import{_ as g}from"./_plugin-vue_export-helper-c27b6911.js";/**
+ * @license lucide-vue-next v0.488.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const h=m("chevron-down",[["path",{d:"m6 9 6 6 6-6",key:"qrunsl"}]]),_=n({__name:"SelectTrigger",props:{disabled:{type:Boolean},asChild:{type:Boolean},as:{},class:{default:""},invalid:{type:Boolean,default:!1}},setup(s){const o=s;return(a,w)=>(c(),l(e(f),d(o,{class:[e(p)("flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap [&>span]:truncate [&>span]:min-w-0",o.class),o.invalid?"!ring-destructive ring-2 placeholder:!text-destructive":""]}),{default:r(()=>[i(a.$slots,"default"),t(e(u),{"as-child":""},{default:r(()=>[t(e(h),{class:"w-4 h-4 opacity-50"})]),_:1})]),_:3},16,["class"]))}}),B=g(_,[["__file","SelectTrigger.vue"]]);export{B as default};

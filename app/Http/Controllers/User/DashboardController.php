@@ -30,10 +30,17 @@ class DashboardController extends BaseController
     public function index(Request $request){
         $organizationId = session()->get('current_organization');
         $data['subscription'] = Subscription::with('plan')->where('organization_id', $organizationId)->first();
-        $data['subscriptionDetails'] = SubscriptionService::calculateSubscriptionBillingDetails($organizationId, $data['subscription']->plan_id);
+        $data['subscriptionDetails'] = $data['subscription'] ? 
+            SubscriptionService::calculateSubscriptionBillingDetails($organizationId, $data['subscription']->plan_id) : 
+            null;
         $data['subscriptionIsActive'] = SubscriptionService::isSubscriptionActive($organizationId);
-        $data['chatCount'] = Chat::where('organization_id', $organizationId)->whereNull('deleted_at')->count();
-        $data['campaignCount'] = Campaign::where('organization_id', $organizationId)->count();
+        $data['chatCount'] = Chat::where('organization_id', $organizationId)
+            ->whereNull('deleted_at')
+            ->whereHas('contact', function ($query) {
+                $query->whereNull('deleted_at');
+            })
+            ->count();
+        $data['campaignCount'] = Campaign::where('organization_id', $organizationId)->whereNull('deleted_at')->count();
         $data['contactCount'] = Contact::where('organization_id', $organizationId)->whereNull('deleted_at')->count();
         $data['templateCount'] = Template::where('organization_id', $organizationId)->whereNull('deleted_at')->count();
         $data['graphAPIVersion'] = config('graph.api_version');
