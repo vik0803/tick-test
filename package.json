@@ -55,7 +55,7 @@
         "vue3-google-map": "^0.18.0",
         "vue3-toastify": "^0.1.14",
         "vuedraggable": "^4.1.0",
-        "whatsapp-web.js": "^1.23.0",
+        "whatsapp-web.js": "^1.24.0",
         "ziggy-js": "^2.5.2"
     }
 }
