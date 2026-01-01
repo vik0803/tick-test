@@ -32,10 +32,10 @@
         "@vueup/vue-quill": "^1.2.0",
         "@wdns/vue-code-block": "^2.3.2",
         "apexcharts": "^3.43.0",
-        "body-parser": "^1.20.2",
+        "body-parser": "^1.20.4",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "express": "^4.18.2",
+        "express": "^4.22.0",
         "laravel-echo": "^1.15.3",
         "laravel-vue-i18n": "^2.7.6",
         "laravel-vue-pagination": "^4.1.1",
@@ -56,6 +56,6 @@
         "vue3-toastify": "^0.1.14",
         "vuedraggable": "^4.1.0",
         "whatsapp-web.js": "^1.23.0",
-        "ziggy-js": "^2.5.2"
+        "ziggy-js": "^2.6.0"
     }
 }
